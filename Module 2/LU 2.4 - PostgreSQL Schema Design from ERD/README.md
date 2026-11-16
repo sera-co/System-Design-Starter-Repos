@@ -263,3 +263,27 @@ helpdesk-schema-repair/
 ├── README.md                    ← this file — update with your decisions
 └── package.json                 ← npm scripts — do not edit
 ```
+
+## ERD-to-Schema Decisions
+
+### Decision 1: Column type decision
+ERD said: String attributes use text values, and timestamp attributes represent date and time.
+Schema decided: Used `TEXT` for string fields and `TIMESTAMPTZ` for timestamp fields.
+Reason: These types match the ERD's string and timestamp attributes while preserving timezone-aware timestamps.
+
+### Decision 2: ON DELETE decision
+ERD said: `tickets.assignee_id` references `agents.id` with `SET NULL` on deletion.
+Schema decided: Used `ON DELETE SET NULL` for `tickets.assignee_id`.
+Reason: Deleting an assigned agent preserves the ticket while clearing its optional assignee.
+
+### Decision 3: Default value decision
+ERD said: New tickets have an initial status of `open`.
+Schema decided: Set `tickets.status` to `NOT NULL DEFAULT 'open'`.
+Reason: Tickets created without an explicitly supplied status begin in the required open state.
+
+## Rejected Table Shape
+
+### Shape: Tags stored as a TEXT array
+What it was: The original design stored tags in a `TEXT[]` column inside the `tickets` table.
+Why rejected: It does not provide a proper relationship between tickets and reusable tags.
+What would break: A tag would not have its own identifier or organization relationship, and the database could not enforce ticket-to-tag foreign keys. The `tags` and `ticket_tags` tables provide those relationships and support tags shared across tickets.
